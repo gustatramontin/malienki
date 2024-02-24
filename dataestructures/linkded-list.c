@@ -1,49 +1,85 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include "utils.h"
 
-struct ll {
+struct list_node_t {
 	int value;
-	struct ll * next;
+	struct list_node_t * next;
 
-	void (*insert)(struct ll *, int);
-	int (*get)(struct ll * , int);
 };
 
-int get(struct ll * l, int i) {
+typedef struct list_node_t list_node ;
+
+int get(list_node * l, int i) {
 	if (i == 0 )
 		return l->value;
 	return get(l->next, i-1);
 }
 
-void insert(struct ll * l, int value) {
-	struct ll * list = l;
+void insert(list_node * l, int value) {
+
+	list_node * list = l;
 	while (list->next != NULL) {
 		list = list->next;
 	}
-	struct ll * new_list = malloc(sizeof(struct ll)); 
-	new_list->value = value;
-	new_list->next = NULL;
-	new_list->insert = &insert;
-	new_list->get = &get;
-
+	list_node * new_list = NEW(list_node, 1);// malloc(sizeof(list_node)); 
+        new_list->value = value;
 	list->next = new_list;
 }
 
-
-struct ll new_list(int value) {
-	struct ll l = { value , NULL, &insert, &get };
-	return l;
+#define INSERT_MANY(list, args...) {\
+    int values[] = {args}; \
+    for (int i = 0; i< sizeof(values)/sizeof(int); i++) { \
+        insert(list, values[i]);\
+    }\
 }
 
 
+list_node new_list(int value) {
+	list_node l = { value , NULL };
+	return l;
+}
+
+void delete(list_node * list, int i) {
+    if (i == 1) {
+        list_node * old_node = list->next;
+        list->next = list->next->next;
+
+        free(old_node);
+        return;
+    }
+
+    if (list->next == NULL) {
+        return;
+    }
+
+    delete(list->next, i-1);
+}
+
+
+void print_list(list_node * list) {
+    while (list->next != NULL) {
+        printf("[ %d ] -> ", list->value);
+        list = list->next;
+    }
+    printf("[ %d ]\n", list->value);
+}
+
 
 int main() {
-	struct ll my_list = new_list(3);
+	list_node my_list = new_list(3);
 
 	
-	my_list.insert(&my_list, 5);
-	my_list.insert(&my_list, 8);
+	insert(&my_list, 5);
+	insert(&my_list, 8);
 
-	printf("%d", my_list.get(&my_list, 2));
+        INSERT_MANY(&my_list, 1,2,3,4);
+
+
+	printf("%d\n", get(&my_list, 3));
+        print_list(&my_list);
+        delete(&my_list, 2);
+
+        print_list(&my_list);
 	//printf("%d", my_list.next);
 }
